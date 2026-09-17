@@ -31,8 +31,36 @@ useEffect(() => {
 }, [isLoading, state.players, myId, myName, setState]); 
 ```
 
-## State Mutations with SyncedStore
-Because `playhtml` uses SyncedStore/Yjs under the hood, if you pass a callback to `setData`, you must explicitly **mutate** the provided `draft` proxy. If you use pure React functions that return a completely new state object, you must map the new object onto the `draft` (e.g., using `Object.assign(draft, newState)`) or use the Value form `setData(newState)`.
+## State Mutations with SyncedStore (Yjs)
+Because `playhtml` uses SyncedStore/Yjs under the hood, you cannot mix React immutable state updates (spreading/returning new objects) with SyncedStore proxy mutations (modifying the draft). 
 
-Replacing a root proxy directly with a standard object using `draft = newState` or similar will fail to sync.
+Pick one approach and stick to it consistently:
+
+### Approach 1: The Mutator Form (Recommended for fine-grained updates)
+Mutate the `draft` directly. **DO NOT** use `Object.assign` to merge a freshly generated state object back into the `draft`, and **DO NOT** spread proxy objects (`...draft.players`). Assigning a live SyncedStore proxy back into itself will cause the CRDT to silently crash or abort the update.
+
+```tsx
+// CORRECT
+setState(draft => {
+  draft.room.phase = 'PROMPT_PHASE';
+  draft.players[myId].score += 10;
+});
+
+// FATAL ERROR (Self-assigning proxies)
+setState(draft => {
+  const nextState = { ...draft, room: { phase: 'PROMPT_PHASE' } };
+  Object.assign(draft, nextState); 
+});
+```
+
+### Approach 2: The Value Form (For full state replacement / pure functions)
+If you have pure functions (e.g. `StateMachine.ts`) that take a state and return a completely new immutable object, bypass the `draft` mutator entirely. Pass the returned object directly to `setState(value)`. `@playhtml/react`'s `usePageData` natively supports this and will perform a canonical diff-and-replace to sync the new snapshot over the network.
+
+```tsx
+// CORRECT
+const handleAdvance = () => {
+  const nextState = startGame(state); // pass the read-only snapshot
+  setState(nextState); // pass value directly!
+};
+```
 

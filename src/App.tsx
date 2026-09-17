@@ -7,7 +7,7 @@ import { EndScreen } from './screens/EndScreen';
 import { GameStateProvider, useSharedGameState } from './hooks/useSharedGameState';
 import { useLocalPlayer } from './hooks/useLocalPlayer';
 import { startGame, advancePhase, submitPrompt, submitDrawing, submitVote } from './game/StateMachine';
-import { defaultSharedState, SharedGameState } from './game/types';
+import { defaultSharedState } from './game/types';
 
 const GameContainer: React.FC = () => {
   const { state, setState } = useSharedGameState();
@@ -54,18 +54,16 @@ const GameContainer: React.FC = () => {
   }, [isLoading, isLeaving, state.players, player.id, player.name, player.avatarColor, setState]);
 
   const handleAdvance = () => {
-    setState(draft => {
-      if (draft.room.phase === 'LOBBY') {
-        const isHost = !draft.room.hostId || draft.room.hostId === player.id;
-        const nextState = startGame(draft as SharedGameState);
-        if (isHost) {
-          nextState.room.hostId = player.id;
-        }
-        Object.assign(draft, nextState);
-      } else {
-        Object.assign(draft, advancePhase(draft as SharedGameState));
+    if (state.room.phase === 'LOBBY') {
+      const isHost = !state.room.hostId || state.room.hostId === player.id;
+      const nextState = startGame(state);
+      if (isHost) {
+        nextState.room.hostId = player.id;
       }
-    });
+      setState(nextState);
+    } else {
+      setState(advancePhase(state));
+    }
   };
 
   const handleLeaveRoom = () => {
@@ -100,9 +98,9 @@ const GameContainer: React.FC = () => {
       localPlayerId={player.id}
       onAdvancePhase={handleAdvance}
       onLeaveRoom={handleLeaveRoom}
-      onSubmitPrompt={(text) => setState(draft => { Object.assign(draft, submitPrompt(draft as SharedGameState, text)); })}
-      onSubmitDrawing={(id, dataUrl) => setState(draft => { Object.assign(draft, submitDrawing(draft as SharedGameState, id, dataUrl)); })}
-      onSubmitVote={(voter, voted) => setState(draft => { Object.assign(draft, submitVote(draft as SharedGameState, voter, voted)); })}
+      onSubmitPrompt={(text) => setState(submitPrompt(state, text))}
+      onSubmitDrawing={(id, dataUrl) => setState(submitDrawing(state, id, dataUrl))}
+      onSubmitVote={(voter, voted) => setState(submitVote(state, voter, voted))}
     />
   );
 };
