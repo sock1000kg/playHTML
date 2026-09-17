@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
 import './global.css';
-import { PlayProvider } from '@playhtml/react';
+// removed PlayProvider
 import { audioManager } from './audio/AudioManager.ts';
 
 // Auto-init audio on first gesture
@@ -16,8 +16,6 @@ document.addEventListener('keydown', initAudio);
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
-    <PlayProvider>
-      <App />
-    </PlayProvider>
+    <App />
   </React.StrictMode>
 );

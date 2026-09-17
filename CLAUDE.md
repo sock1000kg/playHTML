@@ -353,12 +353,12 @@ Volumes persist in `localStorage` and are restored on load.
 - [x] Create shared type definitions and defaults (`src/game/types.ts`)
 - [x] Implement helper functions (`src/game/roomHelpers.ts`)
 
-### Milestone 1 — Local Playable Flow
-- [ ] Implement `StateMachine.ts` (pure transition functions)
-- [ ] Scaffold `App.tsx` phase router using mocked local state (no multiplayer yet)
-- [ ] Build basic UI for Prompt, Draw, Vote, Score, and End phases
-- [ ] Implement `DrawingCanvas.tsx` with basic pointer events and base64 export
-- [ ] Test a full loop locally as a single player
+### Milestone 1 — Local Playable Flow ✅
+- [x] Implement `StateMachine.ts` (pure transition functions)
+- [x] Scaffold `App.tsx` phase router using mocked local state (no multiplayer yet)
+- [x] Build basic UI for Prompt, Draw, Vote, Score, and End phases
+- [x] Implement `DrawingCanvas.tsx` with basic pointer events and base64 export
+- [x] Test a full loop locally as a single player
 
 ### Milestone 2 — Create and Join a Room
 - [ ] Connect `@playhtml/react` (`PlayProvider` and `useSharedGameState.tsx`)

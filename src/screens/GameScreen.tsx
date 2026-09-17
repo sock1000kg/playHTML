@@ -9,6 +9,7 @@ import { ScoreView } from '../components/phase/ScoreView';
 interface GameScreenProps {
   state: SharedGameState;
   localPlayerId: string;
+  onLeaveRoom: () => void;
   onAdvancePhase: () => void;
   onSubmitPrompt: (text: string) => void;
   onSubmitDrawing: (playerId: string, dataUrl: string) => void;
@@ -22,7 +23,7 @@ export const GameScreen: React.FC<GameScreenProps> = (props) => {
   let content = null;
   switch (phase) {
     case 'LOBBY':
-      content = <LobbyView state={state} onAdvance={props.onAdvancePhase} />;
+      content = <LobbyView state={state} localPlayerId={props.localPlayerId} onAdvance={props.onAdvancePhase} onLeaveRoom={props.onLeaveRoom}/>;
       break;
     case 'PROMPT_PHASE':
       content = <PromptView state={state} onSubmitPrompt={props.onSubmitPrompt} onAdvance={props.onAdvancePhase} />;
@@ -42,9 +43,15 @@ export const GameScreen: React.FC<GameScreenProps> = (props) => {
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr 200px', height: '100dvh' }}>
-      <div style={{ borderRight: '1px solid #333', padding: 10 }}>
+      <div style={{ borderRight: '1px solid #333', padding: 10, display: 'flex', flexDirection: 'column' }}>
         <h3>Tools</h3>
         {/* mock tools */}
+        
+        <div style={{ marginTop: 'auto', background: '#333', padding: 10, fontSize: '0.8rem', borderRadius: 4 }}>
+          <strong>DEBUG INFO</strong><br/>
+          My ID: {props.localPlayerId}<br/>
+          Host ID: {state.room.hostId}
+        </div>
       </div>
       <div style={{ padding: 20, overflow: 'auto' }}>
         {content}
