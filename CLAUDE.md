@@ -347,52 +347,46 @@ Volumes persist in `localStorage` and are restored on load.
 
 ## 11. Implementation Checklist
 
-### Phase 1 — Project Bootstrap ✅
-- [ ] Install dependencies: `react`, `react-dom`, `@playhtml/react`, `playhtml`, `@vitejs/plugin-react`
-- [ ] Install dev deps: `@types/react`, `@types/react-dom`, TypeScript
-- [ ] Configure `vite.config.ts` with `@vitejs/plugin-react`
-- [ ] Configure `tsconfig.json` (strict, jsx: react-jsx)
-- [ ] Set up `src/main.tsx` with AudioManager init on first gesture
-- [ ] Define `global.css` with CSS custom properties, reduced-motion queries, View Transitions
-- [ ] Create `src/game/types.ts` with all interfaces and defaults
-- [ ] Create `src/game/roomHelpers.ts` (generateRoomCode, isHost, URL hash helpers)
+### Milestone 0 — Contracts and Bootstrap ✅
+- [x] Install dependencies (`react`, `@playhtml/react`, `vite`, `typescript`)
+- [x] Configure Vite and TypeScript (`vite.config.ts`, `tsconfig.json`)
+- [x] Create shared type definitions and defaults (`src/game/types.ts`)
+- [x] Implement helper functions (`src/game/roomHelpers.ts`)
 
-### Phase 2 — Shared State Foundation ✅
-- [ ] Implement `useSharedGameState.tsx` using `usePageData` from `@playhtml/react`
-- [ ] Implement `useLocalPlayer.ts` hook (localStorage: UUID, name, color)
+### Milestone 1 — Local Playable Flow
 - [ ] Implement `StateMachine.ts` (pure transition functions)
-- [ ] Implement `useTimer.ts` hook (derived from `phaseStartedAt`)
+- [ ] Scaffold `App.tsx` phase router using mocked local state (no multiplayer yet)
+- [ ] Build basic UI for Prompt, Draw, Vote, Score, and End phases
+- [ ] Implement `DrawingCanvas.tsx` with basic pointer events and base64 export
+- [ ] Test a full loop locally as a single player
 
-### Phase 3 — UI Scaffolding + Screen Routing ✅
-- [ ] Build `App.tsx` with phase-based screen router + `document.startViewTransition()`
-- [ ] Build `HomeScreen.tsx` (create room, join room, name + settings input)
-- [ ] Build `GameScreen.tsx` (2-column CSS Grid layout, all phase dispatch)
-- [ ] Build `EndScreen.tsx` (ranked player list, medal icons)
-- [ ] Build `Leaderboard.tsx`, `TimerBar.tsx`, `PlayerAvatar.tsx`
+### Milestone 2 — Create and Join a Room
+- [ ] Connect `@playhtml/react` (`PlayProvider` and `useSharedGameState.tsx`)
+- [ ] Build `HomeScreen.tsx` to generate room codes and update URL hash
+- [ ] Implement `LobbyView.tsx` showing connected players
+- [ ] Sync `useLocalPlayer.ts` (localStorage for UUID/name) with `SharedGameState.players`
 
-### Phase 4 — Drawing Engine ✅
-- [ ] Build `DrawingCanvas.tsx` (Pointer Events, `setPointerCapture`, `quadraticCurveTo` smoothing)
-- [ ] Fixed 800×600 internal resolution with CSS scaling (no ResizeObserver needed)
-- [ ] Build `Toolbar.tsx` (12 colors, 4 brush sizes, clear button)
-- [ ] Implement base64 export via `canvas.toDataURL('image/png')`
+### Milestone 3 — Shared Submissions
+- [ ] Connect `PromptView.tsx` to update shared state
+- [ ] Hook `DrawingCanvas.tsx` to auto-submit canvas base64 to shared state on timer end
+- [ ] Implement `useTimer.ts` derived from `phaseStartedAt` set by the Host
+- [ ] Ensure all clients sync into the `DRAW_PHASE` and submit together
 
-### Phase 5 — Phase UIs & Gameplay Loop ✅
-- [ ] `LobbyView.tsx`: player list, host settings, Start button, room code display
-- [ ] `PromptView.tsx`: prompter text input, waiting screen for others
-- [ ] `DrawView.tsx`: canvas + prompt label + timer, auto-submit on timer end
-- [ ] `VoteView.tsx`: drawing gallery grid, vote button (disabled after vote; hidden for own drawing)
-- [ ] `ScoreView.tsx`: vote tally with thumbnails, host auto-advances after 5s
+### Milestone 4 — Voting and Results
+- [ ] Connect `VoteView.tsx` to display everyone's drawings from shared state
+- [ ] Implement voting logic and sync votes to `SharedGameState.round.votes`
+- [ ] Build `ScoreView.tsx` to tally and reveal results across all clients
+- [ ] Host-driven state machine auto-advances phase
 
-### Phase 6 — End Game & Audio Scaffold ✅
-- [ ] `EndScreen.tsx`: final ranking display with medals, winner highlight, host controls
-- [ ] Scaffold `AudioManager.ts` (Web Audio API, lazy init, SFX/BGM stubs, volume in localStorage)
-- [ ] Scaffold `SettingsMenu.tsx` (volume sliders wired to AudioManager)
-- [ ] `prefers-reduced-motion` CSS overrides applied in global.css
+### Milestone 5 — End Game and Loop
+- [ ] Build `EndScreen.tsx` to show final leaderboard
+- [ ] Implement "Play Again" button (host only) to wipe `round` state but keep players. Implement "Leave room" button.
+- [ ] Handle disconnection edge cases (`isConnected: false`)
 
-### Phase 7 — Audio (Future)
-- [ ] Load and cache sound assets
-- [ ] Wire SFX calls at correct game events (`audioManager.playSfx(...)`)
-- [ ] Wire BGM transitions (`audioManager.playBgm(...)`)
+### Milestone 6 — UI Polish and Audio (Future)
+- [ ] Improve styling, add view transitions, and reduced-motion fallbacks
+- [ ] Scaffold `AudioManager.ts` and volume settings
+- [ ] Wire sound effects for drawing, voting, ticking timer, and scoring
 
 ---
 
