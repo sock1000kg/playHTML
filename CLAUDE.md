@@ -1,6 +1,7 @@
 # Sketchvote — Multiplayer Drawing & Voting Game
 
 > **CRITICAL INSTRUCTION FOR AI:** Keep this file up-to-date as you implement features. Update the checklist, state machine, and any data-model changes as they happen.
+> Read `AGENTS.md` for workflow instructions and learning-mode guidance.
 
 ---
 
@@ -60,7 +61,7 @@
 
 ### Key Architectural Decisions
 
-1. **Single shared state via `@playhtml/react`**. The entire game state lives in one `withSharedState`-wrapped component (or a custom `useSharedGameState` hook). All clients react to the same object reactively.
+1. **Single shared state via `@playhtml/react`**. The entire game state lives in a custom `useSharedGameState` hook powered by `usePageData`. This syncs data globally across the room channel without relying on DOM element binding. All clients react to the same object reactively.
 2. **Host-driven transitions**. Only the client whose `playerId === roomState.hostId` may call `setData` to advance game phases. Other clients are read-only observers for state transitions.
 3. **Room routing via URL hash**. Room codes are stored in `window.location.hash` (`#ABCD`). `PlayProvider` uses `room={roomCode}` to isolate the PartyKit channel.
 4. **Canvas sync on submit**. Drawings are NOT streamed in real-time. On submission, each player exports their canvas as a Base64 PNG string and writes it to `roundData.drawings[playerId]`. This avoids flooding the sync channel.
@@ -193,35 +194,39 @@ interface RoundData {
 ## 5. `@playhtml/react` Integration Pattern
 
 ```tsx
-// src/hooks/useSharedGameState.ts
-import { withSharedState } from '@playhtml/react';
+// src/hooks/useSharedGameState.tsx
+import React, { createContext, useContext } from 'react';
+import { usePageData } from '@playhtml/react';
+import { SharedGameState, defaultSharedState } from '../game/types';
 
-const defaultState: SharedGameState = {
-  room: { ... },
-  players: {},
-  round: { drawings: {}, votes: {}, submittedPlayerIds: [] },
-};
+interface GameStateContextType {
+  state: SharedGameState;
+  setState: (
+    updater: SharedGameState | ((draft: SharedGameState) => void)
+  ) => void;
+}
 
-// Wrap the root provider:
-export const GameStateProvider = withSharedState(
-  { defaultData: defaultState },
-  ({ data, setData, children }) => (
+const GameStateContext = createContext<GameStateContextType | null>(null);
+
+export const GameStateProvider: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
+  const [data, setData] = usePageData<SharedGameState>('game-state', defaultSharedState);
+
+  return (
     <GameStateContext.Provider value={{ state: data, setState: setData }}>
       {children}
     </GameStateContext.Provider>
-  )
-);
+  );
+};
 
 // In PlayProvider, set room={roomCode} to silo per game room:
-<PlayProvider room={roomCode}>
+<PlayProvider initOptions={{ room: roomCode }}>
   <GameStateProvider>
     <App />
   </GameStateProvider>
 </PlayProvider>
 ```
 
-> **Important**: `setData` performs a **full replace** of the shared object. Always spread to merge:  
-> `setData(prev => ({ ...prev, room: { ...prev.room, phase: 'DRAW_PHASE' } }))`
+> **Important**: When mutating `setData` with a callback, explicitly mutate the `draft` proxy. When applying pure functions that return completely new state objects, use the Value form: `setState(newState)` directly to bypass the mutator entirely.
 
 ---
 
@@ -360,11 +365,11 @@ Volumes persist in `localStorage` and are restored on load.
 - [x] Implement `DrawingCanvas.tsx` with basic pointer events and base64 export
 - [x] Test a full loop locally as a single player
 
-### Milestone 2 — Create and Join a Room
-- [ ] Connect `@playhtml/react` (`PlayProvider` and `useSharedGameState.tsx`)
-- [ ] Build `HomeScreen.tsx` to generate room codes and update URL hash
-- [ ] Implement `LobbyView.tsx` showing connected players
-- [ ] Sync `useLocalPlayer.ts` (localStorage for UUID/name) with `SharedGameState.players`
+### Milestone 2 — Create and Join a Room ✅
+- [x] Connect `@playhtml/react` (`PlayProvider` and `useSharedGameState.tsx`)
+- [x] Build `HomeScreen.tsx` to generate room codes and update URL hash
+- [x] Implement `LobbyView.tsx` showing connected players
+- [x] Sync `useLocalPlayer.ts` (localStorage for UUID/name) with `SharedGameState.players`
 
 ### Milestone 3 — Shared Submissions
 - [ ] Connect `PromptView.tsx` to update shared state

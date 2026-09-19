@@ -1,3 +1,8 @@
+> **CRITICAL INSTRUCTION FOR AI:** Keep this file up-to-date as you implement features. Update the checklist, state machine, and any data-model changes as they happen.
+> Read `CLAUDE.md` for project architecture and milestones before making changes.
+
+---
+
 # @playhtml/react Quirks and Rules
 
 ## `usePageData` and `isLoading` No-Op Quirk

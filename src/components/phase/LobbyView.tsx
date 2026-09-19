@@ -48,7 +48,11 @@ export const LobbyView: React.FC<LobbyViewProps> = ({ state, localPlayerId, onAd
         <button 
           onClick={() => { 
             onLeaveRoom()
-            window.location.hash = ''
+            // Delay the URL change to allow the deletion mutation to flush over the WebSocket 
+            // before the inevitable window.location.reload() kills the connection!
+            setTimeout(() => {
+              window.location.hash = ''
+            }, 100);
           }}>
             Leave Room
         </button>
