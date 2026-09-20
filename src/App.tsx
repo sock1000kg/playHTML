@@ -13,24 +13,26 @@ const GameContainer: React.FC = () => {
   const { state, setState } = useSharedGameState();
   const { player } = useLocalPlayer();
   const { isLoading } = usePlayContext();
-  const [ isLeaving, setIsLeaving ]  = useState(false)
+  const [isLeaving, setIsLeaving] = useState(false);
 
-  // Self-healing registration: playhtml's setData can silently no-op during early connection phases.
-  // => The shared state might not be connected when the component first render => State update gets ignored
-  // We retry registration until the player successfully appears in the synced state.
   useEffect(() => {
     if (isLoading || !player.name || isLeaving) return;
-    
-    // If we are already fully registered in the shared state, we're done!
+    if (!state.players) return;
+
     const me = state.players[player.id];
     if (me && me.name === player.name && me.avatarColor === player.avatarColor) return;
 
     const tryRegister = () => {
       setState(draft => {
-        const isFirst = Object.keys(draft.players).length === 0;
-        if (isFirst && !draft.room.hostId) {
+        if (!draft.players) draft.players = {};
+        if (!draft.room) draft.room = { ...defaultSharedState.room };
+
+        // Auto-assign host: if the room has no host, the first person to sync claims it.
+        // This solves the bug where the host is lost upon page reload.
+        if (!draft.room.hostId) {
           draft.room.hostId = player.id;
         }
+
         if (!draft.players[player.id]) {
           draft.players[player.id] = {
             id: player.id,
@@ -42,20 +44,19 @@ const GameContainer: React.FC = () => {
         } else {
           draft.players[player.id].name = player.name;
           draft.players[player.id].avatarColor = player.avatarColor;
+          draft.players[player.id].isConnected = true; 
         }
+        if (!draft.room.roomCode) draft.room.roomCode = getRoomCodeFromUrl() || '';
       });
     };
 
-    // Try immediately
     tryRegister();
-
-    // Retry periodically in case it no-opped
     const timer = setInterval(tryRegister, 500);
     return () => clearInterval(timer);
   }, [isLoading, isLeaving, state.players, player.id, player.name, player.avatarColor, setState]);
 
   const handleAdvance = () => {
-    if (state.room.phase === 'LOBBY') {
+    if (state.room?.phase === 'LOBBY') {
       const isHost = !state.room.hostId || state.room.hostId === player.id;
       const nextState = startGame(state);
       if (isHost) {
@@ -72,6 +73,11 @@ const GameContainer: React.FC = () => {
     setState(draft => {
       delete draft.players[player.id];
     });
+    
+    // Allow the mutation to flush over WebSocket before the page reload severs it
+    setTimeout(() => {
+      setRoomCodeInUrl('');
+    }, 500);
   };
 
   const handlePlayAgain = () => {
@@ -105,50 +111,58 @@ const GameContainer: React.FC = () => {
   );
 };
 
+// Waits for PlayProvider to mount before rendering GameStateProvider
+const RoomGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isLoading } = usePlayContext();
+
+  if (isLoading) {
+    return (
+      <div className="flex h-dvh w-full items-center justify-center bg-gray-900 text-white">
+        <p>Connecting to room...</p>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+};
+
 const App: React.FC = () => {
-  const [roomCode, setRoomCode] = useState<string | null>(getRoomCodeFromUrl());
-  const initialRoomCode = React.useRef<string | null>(roomCode);
+  // Read initial room code on mount. We don't need a setter because we reload on change 
+  // -> Hack to go around playHTML's race conditions.
+  const [roomCode] = useState<string | null>(getRoomCodeFromUrl());
   const { player, updatePlayer } = useLocalPlayer();
 
   useEffect(() => {
     const handleHashChange = () => {
-      const newCode = getRoomCodeFromUrl();
-      
-      // @playhtml/react operates as a global singleton. It doesn't support dynamically
-      // swapping rooms on the fly. If we're already connected to a room and the URL changes
-      // (e.g. leaving or joining a new room), we MUST do a full page reload to get a fresh connection.
-      if (initialRoomCode.current !== null && newCode !== initialRoomCode.current) {
-        window.location.reload();
-        return;
-      }
-
-      setRoomCode(newCode);
-      if (initialRoomCode.current === null && newCode !== null) {
-        initialRoomCode.current = newCode;
-      }
+      // Manual reload hack: forces playhtml to initialize cleanly on the new room
+      // and completely bypasses the 'createPageData is not available before init' race condition.
+      window.location.reload();
     };
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  if (!roomCode) {
-    return (
-      <HomeScreen 
-        playerName={player.name}
-        onNameChange={(name) => updatePlayer({ name })}
-        onStartLocal={() => {
-          if (!player.name) updatePlayer({ name: 'Host' });
-          setRoomCodeInUrl(generateRoomCode());
-        }} 
-      />
-    );
-  }
-
   return (
-    <PlayProvider initOptions={{ room: roomCode }}>
-      <GameStateProvider>
-        <GameContainer />
-      </GameStateProvider>
+    <PlayProvider 
+      initOptions={{ room: () => getRoomCodeFromUrl() || 'lobby' }}
+      pathname={roomCode || 'home'}
+    >
+      {!roomCode ? (
+        <HomeScreen 
+          playerName={player.name}
+          onNameChange={(name) => updatePlayer({ name })}
+          onStartLocal={() => {
+            if (!player.name) updatePlayer({ name: 'Host' });
+            setRoomCodeInUrl(generateRoomCode());
+          }} 
+        />
+      ) : (
+        <RoomGate>
+          <GameStateProvider>
+            <GameContainer />
+          </GameStateProvider>
+        </RoomGate>
+      )}
     </PlayProvider>
   );
 };
