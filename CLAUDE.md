@@ -389,6 +389,7 @@ Volumes persist in `localStorage` and are restored on load.
 - [ ] Handle disconnection edge cases (`isConnected: false`)
 
 ### Milestone 6 — UI Polish and Audio (Future)
+- [ ] Add drawing tools and color changes
 - [ ] Improve styling, add view transitions, and reduced-motion fallbacks
 - [ ] Scaffold `AudioManager.ts` and volume settings
 - [ ] Wire sound effects for drawing, voting, ticking timer, and scoring

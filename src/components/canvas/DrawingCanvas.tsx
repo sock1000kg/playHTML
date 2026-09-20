@@ -12,7 +12,7 @@ export interface DrawingCanvasRef {
 }
 
 export const DrawingCanvas = React.forwardRef<DrawingCanvasRef, DrawingCanvasProps>(
-  ({ brushColor = '#ffffff', brushSize = 5, isDrawingEnabled = true }, ref) => {
+  ({ brushColor = '#000000', brushSize = 5, isDrawingEnabled = true }, ref) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [isDrawing, setIsDrawing] = useState(false);
     const [lastPos, setLastPos] = useState<{ x: number; y: number } | null>(null);
@@ -26,69 +26,57 @@ export const DrawingCanvas = React.forwardRef<DrawingCanvasRef, DrawingCanvasPro
         if (!canvasRef.current) return;
         const ctx = canvasRef.current.getContext('2d');
         if (!ctx) return;
-        ctx.fillStyle = '#000000'; // or whatever background
+        ctx.fillStyle = '#fffefe'; // or whatever background
         ctx.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
       }
     }));
 
+    /**
+     * Canvas Initialization:
+     * We use a fixed internal resolution of 800x600 so that every player's drawing
+     * is exactly the same size regardless of their device. The CSS `object-fit: contain` 
+     * scales it visually to fit the screen without distorting or cropping.
+     */
     useEffect(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
 
-      const initContext = () => {
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.fillStyle = '#2a2a2a';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          ctx.lineCap = 'round';
-          ctx.lineJoin = 'round';
-        }
-      };
+      canvas.width = 800;
+      canvas.height = 600;
 
-      const isFirstResize = { current: true };
-      
-      const observer = new ResizeObserver((entries) => {
-        for (const entry of entries) {
-          const { width, height } = entry.contentRect;
-          
-          // Save existing content before resize so we don't lose the drawing
-          const ctx = canvas.getContext('2d');
-          let imageData;
-          
-          // Bug Fix: We must skip restoring on the very first resize. 
-          // A native <canvas> starts at 300x150. If we getImageData() from that initial
-          // 300x150 blank canvas and putImageData() after resizing, it paints a 300x150 
-          // dark/transparent block into the top-left corner of the new larger canvas!
-          if (!isFirstResize.current && canvas.width > 0 && canvas.height > 0 && ctx) {
-            imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-
-          initContext();
-          
-          if (imageData && ctx) {
-            ctx.putImageData(imageData, 0, 0);
-          }
-          
-          isFirstResize.current = false;
-        }
-      });
-      
-      observer.observe(canvas);
-      return () => observer.disconnect();
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.fillStyle = '#fcfcfc';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+      }
     }, []);
 
+    /**
+     * Mouse Position Mapping:
+     * Because the canvas uses `object-fit: contain`, its visual size is often smaller than
+     * its actual DOM bounding box (letterboxing). This function calculates the letterbox offset 
+     * and maps the physical screen coordinates to the fixed 800x600 internal coordinate system.
+     */
     const getMousePos = (e: React.PointerEvent<HTMLCanvasElement>) => {
       const canvas = canvasRef.current;
       if (!canvas) return { x: 0, y: 0 };
+      
       const rect = canvas.getBoundingClientRect();
-      const scaleX = canvas.width / rect.width;
-      const scaleY = canvas.height / rect.height;
+      const internalWidth = canvas.width;   // 800
+      const internalHeight = canvas.height; // 600
+      
+      // Calculate the scaling factor imposed by object-fit: contain
+      const scale = Math.min(rect.width / internalWidth, rect.height / internalHeight);
+      
+      // Calculate the visual offset (letterboxing) inside the DOM element
+      const offsetX = (rect.width - internalWidth * scale) / 2;
+      const offsetY = (rect.height - internalHeight * scale) / 2;
+      
       return {
-        x: (e.clientX - rect.left) * scaleX,
-        y: (e.clientY - rect.top) * scaleY
+        x: (e.clientX - rect.left - offsetX) / scale,
+        y: (e.clientY - rect.top - offsetY) / scale
       };
     };
 
@@ -146,7 +134,7 @@ export const DrawingCanvas = React.forwardRef<DrawingCanvasRef, DrawingCanvasPro
           width: '100%',
           height: '100%',
           touchAction: 'none',
-          objectFit: 'contain'
+          objectFit: 'contain',
         }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}

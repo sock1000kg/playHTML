@@ -6,7 +6,7 @@ import { GameScreen } from './screens/GameScreen';
 import { EndScreen } from './screens/EndScreen';
 import { GameStateProvider, useSharedGameState } from './hooks/useSharedGameState';
 import { useLocalPlayer } from './hooks/useLocalPlayer';
-import { startGame, advancePhase, submitPrompt, submitVote } from './game/StateMachine';
+import { startGame, advancePhase, submitPrompt } from './game/StateMachine';
 import { defaultSharedState } from './game/types';
 import { useTimer } from './hooks/useTimer';
 
@@ -16,6 +16,13 @@ const GameContainer: React.FC = () => {
   const { isLoading } = usePlayContext();
   const [isLeaving, setIsLeaving] = useState(false);
 
+  /**
+   * Self-Healing Player Registration:
+   * This effect continuously attempts to register the local player into the globally synced Yjs state.
+   * We use a recurring `setInterval` because `@playhtml/react` mutators can silently fail or get dropped  
+   * when `isLoading` turns false because the mutators fired during the split-second WebSocket handshake.
+   * The loop automatically bails out on every tick once it verifies the player's data successfully made it into the synced state.
+   */
   useEffect(() => {
     if (isLoading || !player.name || isLeaving) return;
     if (!state.players) return;
@@ -76,24 +83,39 @@ const GameContainer: React.FC = () => {
     state.room?.settings?.drawTimerSeconds || 90
   );
 
+  const voteTimer = useTimer(
+    state.room?.phase === 'VOTE_PHASE' ? state.room.roundInfo.phaseStartedAt : null,
+    state.room?.settings?.voteTimerSeconds || 30
+  );
+
   // Phase Transition Orchestration:
-  // Instead of each client trying to eagerly transition the game out of DRAW_PHASE 
-  // (which causes race conditions where an old state snapshot overwrites other people's drawings),
-  // we elect the Host to observe the synchronized array of submitted drawings. 
+  // Instead of each client trying to eagerly transition the game out of DRAW_PHASE or VOTE_PHASE
+  // (which causes race conditions where an old state snapshot overwrites other people's drawings/votes),
+  // we elect the Host to observe the synchronized array of submitted drawings or votes. 
   // Once the array contains everyone, OR the timer naturally expires, the Host safely 
   // steps the StateMachine forward using the fully synchronized state.
   useEffect(() => {
-    if (state.room?.phase === 'DRAW_PHASE' && isHost) {
+    if (!isHost) return;
+
+    if (state.room?.phase === 'DRAW_PHASE') {
       const expected = Object.keys(state.players || {}).length; // Everyone draws
       const submitted = state.round?.submittedPlayerIds?.length || 0;
-      
       const allSubmitted = submitted >= expected && expected > 0;
       
       if (allSubmitted || drawTimer.isExpired) {
         setState(advancePhase(state));
       }
     }
-  }, [state, isHost, setState, drawTimer.isExpired]);
+    else if (state.room?.phase === 'VOTE_PHASE') {
+      const expected = Object.keys(state.players || {}).length; // Everyone votes
+      const submitted = Object.keys(state.round?.votes || {}).length;
+      const allSubmitted = submitted >= expected && expected > 0;
+      
+      if (allSubmitted || voteTimer.isExpired) {
+        setState(advancePhase(state));
+      }
+    }
+  }, [state, isHost, setState, drawTimer.isExpired, voteTimer.isExpired]);
 
   const handleLeaveRoom = () => {
     setIsLeaving(true);
@@ -140,7 +162,10 @@ const GameContainer: React.FC = () => {
           draft.round.submittedPlayerIds.push(id);
         }
       })}
-      onSubmitVote={(voter, voted) => setState(submitVote(state, voter, voted))}
+      onSubmitVote={(voter, voted) => setState(draft => {
+        if (!draft.round.votes) draft.round.votes = {};
+        draft.round.votes[voter] = voted;
+      })}
     />
   );
 };
@@ -166,10 +191,15 @@ const App: React.FC = () => {
   const [roomCode] = useState<string | null>(getRoomCodeFromUrl());
   const { player, updatePlayer } = useLocalPlayer();
 
+  /**
+   * Router/Navigation Race Condition Fix:
+   * `@playhtml/react` has a severe bug where dynamically changing the room prop without a hard reload
+   * causes it to crash with `createPageData is not available before init`. 
+   * Since the app uses hash routing, we attach this listener. When the URL hash changes, we force 
+   * a hard browser refresh, ensuring `playhtml` initializes cleanly with the new room code on mount.
+   */
   useEffect(() => {
     const handleHashChange = () => {
-      // Manual reload hack: forces playhtml to initialize cleanly on the new room
-      // and completely bypasses the 'createPageData is not available before init' race condition.
       window.location.reload();
     };
     window.addEventListener('hashchange', handleHashChange);

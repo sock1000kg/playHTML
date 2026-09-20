@@ -15,7 +15,12 @@ export const DrawView: React.FC<DrawViewProps> = ({ state, localPlayerId, onSubm
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const { secondsRemaining, isExpired } = useTimer(state.room.roundInfo.phaseStartedAt, state.room.settings.drawTimerSeconds);
 
-  // Auto-submit when time is up
+  /**
+   * Auto-Submit Orchestration:
+   * When the timer expires, this effect automatically triggers the local canvas 
+   * to export its base64 drawing and submit it to the network.
+   * `hasSubmitted` ensures this only fires once per player, preventing infinite loops.
+   */
   useEffect(() => {
     if (isExpired && !hasSubmitted) {
       submitCurrentDrawing();

@@ -4,6 +4,12 @@ export function useTimer(startTimeMs: number | null, durationSeconds: number) {
   const [secondsRemaining, setSecondsRemaining] = useState(durationSeconds);
   const [isExpired, setIsExpired] = useState(false);
 
+  /**
+   * Universal Clock Synchronization:
+   * By relying on a shared `startTimeMs` broadcasted by the Host instead of a local countdown,
+   * this effect guarantees that all clients see the exact same timer (plus or minus network drift).
+   * It ticks every 500ms for visual responsiveness but derives its time purely from `Date.now()`.
+   */
   useEffect(() => {
     if (!startTimeMs) {
       setSecondsRemaining(durationSeconds);
