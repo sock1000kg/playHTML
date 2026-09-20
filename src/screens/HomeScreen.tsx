@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
 
 interface HomeScreenProps {
   playerName: string;
@@ -11,48 +13,51 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ playerName, onNameChange
 
   return (
     <div style={{ padding: 40, maxWidth: 400, margin: '0 auto', textAlign: 'center' }}>
-      <h1>Sketchvote</h1>
+      <h1 style={{ color: 'white', marginBottom: '2rem' }}>Sketchvote</h1>
       
-      <div style={{ marginBottom: 20 }}>
-        <label style={{ display: 'block', marginBottom: 5 }}>Your Name</label>
-        <input 
+      <div style={{ marginBottom: 20, textAlign: 'left' }}>
+        <label style={{ display: 'block', marginBottom: 5, color: '#ccc' }}>Your Name</label>
+        <Input 
           value={playerName} 
           onChange={e => onNameChange(e.target.value)} 
           placeholder="Enter your name..."
-          style={{ padding: 10, width: '100%', boxSizing: 'border-box' }}
+          style={{ padding: '0.75rem', fontSize: '1rem' }}
         />
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
-        <button 
+        <Button 
+          variant="secondary"
+          fullWidth
           onClick={onStartLocal}
           disabled={!playerName.trim()}
-          style={{ padding: 15, background: '#4fc3f7', color: '#1a1a1a', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}
         >
           Create New Room
-        </button>
+        </Button>
 
-        <div style={{ borderTop: '1px solid #333', paddingTop: 15 }}>
-          <label style={{ display: 'block', marginBottom: 5 }}>Join Existing Room</label>
+        <div style={{ borderTop: '1px solid #333', paddingTop: 15, textAlign: 'left' }}>
+          <label style={{ display: 'block', marginBottom: 5, color: '#ccc' }}>Join Existing Room</label>
           <div style={{ display: 'flex', gap: 5 }}>
-            <input 
+            <Input 
               value={joinCode} 
               onChange={e => setJoinCode(e.target.value.toUpperCase())} 
               placeholder="ABCD"
               maxLength={4}
-              style={{ padding: 10, flex: 1, textTransform: 'uppercase' }}
+              style={{ padding: '0.75rem', fontSize: '1rem', flex: 1, textTransform: 'uppercase' }}
+              fullWidth={false}
             />
-            <button 
+            <Button 
+              variant="primary"
               onClick={() => {
                 if (joinCode.length === 4) {
                   window.location.hash = joinCode;
                 }
               }}
               disabled={!playerName.trim() || joinCode.length < 4}
-              style={{ padding: 10, cursor: 'pointer' }}
+              style={{ padding: '0.75rem 1.5rem' }}
             >
               Join
-            </button>
+            </Button>
           </div>
         </div>
       </div>

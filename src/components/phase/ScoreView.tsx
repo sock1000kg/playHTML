@@ -1,5 +1,6 @@
 import React from 'react';
 import { SharedGameState } from '../../game/types';
+import { Button } from '../ui/Button';
 
 interface ScoreViewProps {
   state: SharedGameState;
@@ -15,7 +16,7 @@ export const ScoreView: React.FC<ScoreViewProps> = ({ state, onAdvance }) => {
           <li key={p.id}>{p.name}: {p.score}</li>
         ))}
       </ul>
-      <button onClick={onAdvance}>Next Round</button>
+      <Button variant="primary" onClick={onAdvance}>Next Round</Button>
     </div>
   );
 };

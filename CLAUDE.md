@@ -372,7 +372,7 @@ Volumes persist in `localStorage` and are restored on load.
 - [x] Sync `useLocalPlayer.ts` (localStorage for UUID/name) with `SharedGameState.players`
 
 ### Milestone 3 — Shared Submissions
-- [ ] Connect `PromptView.tsx` to update shared state
+- [x] Connect `PromptView.tsx` to update shared state
 - [ ] Hook `DrawingCanvas.tsx` to auto-submit canvas base64 to shared state on timer end
 - [ ] Implement `useTimer.ts` derived from `phaseStartedAt` set by the Host
 - [ ] Ensure all clients sync into the `DRAW_PHASE` and submit together

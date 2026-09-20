@@ -1,6 +1,7 @@
 import React from 'react';
 import { SharedGameState } from '../../game/types';
 import { getRoomCodeFromUrl } from '../../game/roomHelpers';
+import { Button } from '../ui/Button';
 
 interface LobbyViewProps {
   state: SharedGameState;
@@ -34,28 +35,24 @@ export const LobbyView: React.FC<LobbyViewProps> = ({ state, localPlayerId, onAd
       </div>
 
       {isHost ? (
-        <button 
+        <Button 
+          variant="secondary"
           onClick={onAdvance}
-          style={{ padding: '15px 30px', fontSize: '1.1rem', background: '#4fc3f7', color: '#1a1a1a', border: 'none', fontWeight: 'bold', cursor: 'pointer', borderRadius: 4 }}
         >
           Start Game
-        </button>
+        </Button>
       ) : (
         <p style={{ fontStyle: 'italic', color: '#aaa' }}>Waiting for host to start...</p>
       )}
       
       <div style={{ marginTop: 20 }}>
-        <button 
+        <Button 
+          variant="default"
           onClick={() => { 
             onLeaveRoom()
-            // Delay the URL change to allow the deletion mutation to flush over the WebSocket 
-            // before the inevitable window.location.reload() kills the connection!
-            setTimeout(() => {
-              window.location.hash = ''
-            }, 100);
           }}>
             Leave Room
-        </button>
+        </Button>
       </div>
     </div>
   );

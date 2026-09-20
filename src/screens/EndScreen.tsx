@@ -1,5 +1,6 @@
 import React from 'react';
 import { SharedGameState } from '../game/types';
+import { Button } from '../components/ui/Button';
 
 interface EndScreenProps {
   state: SharedGameState;
@@ -15,7 +16,7 @@ export const EndScreen: React.FC<EndScreenProps> = ({ state, onPlayAgain }) => {
           <li key={p.id}>{p.name}: {p.score}</li>
         ))}
       </ol>
-      <button onClick={onPlayAgain}>Play Again</button>
+      <Button variant="primary" onClick={onPlayAgain}>Play Again</Button>
     </div>
   );
 };

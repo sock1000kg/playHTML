@@ -1,5 +1,6 @@
 import React from 'react';
 import { SharedGameState } from '../../game/types';
+import { Button } from '../ui/Button';
 
 interface VoteViewProps {
   state: SharedGameState;
@@ -23,10 +24,12 @@ export const VoteView: React.FC<VoteViewProps> = ({ state, localPlayerId, onSubm
               <div style={{ marginTop: 10, fontWeight: 'bold' }}>Drawn by: {playerName}</div>
               
               {playerId !== localPlayerId && (
-                <button style={{ marginTop: 10 }} onClick={() => {
-                  onSubmitVote(localPlayerId, playerId);
-                  onAdvance();
-                }}>Vote</button>
+                <div style={{ marginTop: 10 }}>
+                  <Button variant="primary" onClick={() => {
+                    onSubmitVote(localPlayerId, playerId);
+                    onAdvance();
+                  }}>Vote</Button>
+                </div>
               )}
             </div>
           );
@@ -36,7 +39,7 @@ export const VoteView: React.FC<VoteViewProps> = ({ state, localPlayerId, onSubm
       {/* local mock advance if no drawings, or if player is alone and can't vote */}
       {(drawings.length === 0 || (drawings.length === 1 && drawings[0][0] === localPlayerId)) && (
         <div style={{ marginTop: 20 }}>
-          <button onClick={onAdvance}>Skip Vote (Local Test)</button>
+          <Button variant="secondary" onClick={onAdvance}>Skip Vote (Local Test)</Button>
         </div>
       )}
     </div>

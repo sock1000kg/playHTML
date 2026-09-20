@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { SharedGameState } from '../../game/types';
 import { DrawingCanvas, DrawingCanvasRef } from '../canvas/DrawingCanvas';
+import { Button } from '../ui/Button';
 
 interface DrawViewProps {
   state: SharedGameState;
@@ -26,10 +27,10 @@ export const DrawView: React.FC<DrawViewProps> = ({ state, localPlayerId, onSubm
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <h2>Draw Phase</h2>
       <p>Prompt: {state.room.roundInfo.promptText}</p>
-      <div style={{ flex: 1, position: 'relative' }}>
+      <div style={{ flex: 1, position: 'relative', marginBottom: '1rem' }}>
         <DrawingCanvas ref={canvasRef} />
       </div>
-      <button onClick={handleSubmit}>Submit Drawing</button>
+      <Button variant="primary" onClick={handleSubmit}>Submit Drawing</Button>
     </div>
   );
 };

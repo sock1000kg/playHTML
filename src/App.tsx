@@ -104,7 +104,7 @@ const GameContainer: React.FC = () => {
       localPlayerId={player.id}
       onAdvancePhase={handleAdvance}
       onLeaveRoom={handleLeaveRoom}
-      onSubmitPrompt={(text) => setState(submitPrompt(state, text))}
+      onSubmitPrompt={(text) => setState(advancePhase(submitPrompt(state, text)))}
       onSubmitDrawing={(id, dataUrl) => setState(submitDrawing(state, id, dataUrl))}
       onSubmitVote={(voter, voted) => setState(submitVote(state, voter, voted))}
     />
@@ -117,7 +117,7 @@ const RoomGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   if (isLoading) {
     return (
-      <div className="flex h-dvh w-full items-center justify-center bg-gray-900 text-white">
+      <div style={{ display: 'flex', height: '100vh', width: '100%', alignItems: 'center', justifyContent: 'center', backgroundColor: '#111827', color: 'white' }}>
         <p>Connecting to room...</p>
       </div>
     );
