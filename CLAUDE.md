@@ -383,13 +383,18 @@ Volumes persist in `localStorage` and are restored on load.
 - [ ] Ensure all clients sync into `SCORE_PHASE` when voting completes across all clients
 - [ ] Host-driven state machine auto-advances phase
 
-### Milestone 5 — End Game and Loop
-- [ ] Build `EndScreen.tsx` to show final leaderboard
-- [ ] Implement "Play Again" button (host only) to wipe `round` state but keep players. Implement "Leave room" button.
-- [ ] Handle disconnection edge cases (`isConnected: false`)
+### Milestone 5 — End Game and Loop ✅
+- [x] Build `EndScreen.tsx` to show final leaderboard
+- [x] Implement "Play Again" button (host only) to wipe `round` state but keep players. Implement "Leave room" button.
+- [x] Handle disconnection edge cases (`isConnected: false`)
+
+### Milestone 6 - Fully fledged game
+- [ ] Add drawing tools and color changes
+- [ ] Host can kick players
+- [ ] Display "Voted" or "Submitted" next to players' names
+- [ ] "Leave room" button inside every phase
 
 ### Milestone 6 — UI Polish and Audio (Future)
-- [ ] Add drawing tools and color changes
 - [ ] Improve styling, add view transitions, and reduced-motion fallbacks
 - [ ] Scaffold `AudioManager.ts` and volume settings
 - [ ] Wire sound effects for drawing, voting, ticking timer, and scoring

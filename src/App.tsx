@@ -135,20 +135,26 @@ const GameContainer: React.FC = () => {
 
   const handlePlayAgain = () => {
     setState(draft => {
-      Object.assign(draft, {
-        ...defaultSharedState,
-        players: draft.players,
-        room: {
-          ...defaultSharedState.room,
-          roomCode: draft.room.roomCode,
-          hostId: draft.room.hostId
+      draft.room.phase = 'LOBBY';
+      draft.room.roundInfo = { ...defaultSharedState.room.roundInfo };
+      draft.round = { drawings: {}, votes: {}, submittedPlayerIds: [] };
+      if (draft.players) {
+        for (const pId of Object.keys(draft.players)) {
+          draft.players[pId].score = 0;
         }
-      });
+      }
     });
   };
 
   if (state.room.phase === 'END_GAME') {
-    return <EndScreen state={state} onPlayAgain={handlePlayAgain} />;
+    return (
+      <EndScreen 
+        state={state} 
+        localPlayerId={player.id} 
+        onPlayAgain={handlePlayAgain} 
+        onLeaveRoom={handleLeaveRoom}
+      />
+    );
   }
 
   return (

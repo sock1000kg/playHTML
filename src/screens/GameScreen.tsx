@@ -36,7 +36,7 @@ export const GameScreen: React.FC<GameScreenProps> = (props) => {
       content = <VoteView state={state} localPlayerId={props.localPlayerId} onSubmitVote={props.onSubmitVote} />;
       break;
     case 'SCORE_PHASE':
-      content = <ScoreView state={state} onAdvance={props.onAdvancePhase} />;
+      content = <ScoreView state={state} localPlayerId={props.localPlayerId} onAdvance={props.onAdvancePhase} />;
       break;
     default:
       content = <div>Unknown phase: {phase}</div>;
