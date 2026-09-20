@@ -5,6 +5,7 @@ import { PromptView } from '../components/phase/PromptView';
 import { DrawView } from '../components/phase/DrawView';
 import { VoteView } from '../components/phase/VoteView';
 import { ScoreView } from '../components/phase/ScoreView';
+import { Button } from '../components/ui/Button';
 
 interface GameScreenProps {
   state: SharedGameState;
@@ -51,6 +52,11 @@ export const GameScreen: React.FC<GameScreenProps> = (props) => {
           <strong>DEBUG INFO</strong><br/>
           My ID: {props.localPlayerId}<br/>
           Host ID: {state.room.hostId}
+          <div style={{ marginTop: 10 }}>
+            <Button variant="secondary" onClick={props.onAdvancePhase} style={{ width: '100%', fontSize: '0.7rem' }}>
+              FORCE ADVANCE PHASE
+            </Button>
+          </div>
         </div>
       </div>
       <div style={{ padding: 20, overflow: 'auto' }}>

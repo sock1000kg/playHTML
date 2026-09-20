@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { SharedGameState } from '../../game/types';
 import { Button } from '../ui/Button';
 import { useTimer } from '../../hooks/useTimer';
@@ -10,28 +10,27 @@ interface VoteViewProps {
 }
 
 export const VoteView: React.FC<VoteViewProps> = ({ state, localPlayerId, onSubmitVote }) => {
-  const drawings = Object.entries(state.round.drawings);
   const [hasVoted, setHasVoted] = useState(false);
+  const drawings = Object.entries(state.round?.drawings || {});
   
   const { secondsRemaining, isExpired } = useTimer(state.room.roundInfo.phaseStartedAt, state.room.settings.voteTimerSeconds);
-
-  /**
-   * Auto-Vote Orchestration:
-   * When the timer hits 0, if the player hasn't voted yet, this effect randomly 
-   * picks another player's drawing and casts a vote for it. This ensures the 
-   * game isn't deadlocked by AFK players while still assigning points fairly.
-   */
-  useEffect(() => {
+  
+  // Auto vote for a random person if they haven't voted when timer runs out
+  React.useEffect(() => {
     if (isExpired && !hasVoted) {
-      // Pick a random drawing that isn't ours
-      const validDrawings = drawings.filter(([id]) => id !== localPlayerId);
-      if (validDrawings.length > 0) {
-        const randomDrawing = validDrawings[Math.floor(Math.random() * validDrawings.length)];
-        onSubmitVote(localPlayerId, randomDrawing[0]);
+      const options = drawings.filter(([id]) => id !== localPlayerId);
+      if (options.length > 0) {
+        const randomPick = options[Math.floor(Math.random() * options.length)][0];
+        handleVote(randomPick);
       }
-      setHasVoted(true);
     }
-  }, [isExpired, hasVoted, drawings, localPlayerId, onSubmitVote]);
+  }, [isExpired, hasVoted]);
+
+  const handleVote = (votedForId: string) => {
+    if (hasVoted) return;
+    setHasVoted(true);
+    onSubmitVote(localPlayerId, votedForId);
+  };
 
   if (hasVoted) {
     return (
@@ -64,10 +63,7 @@ export const VoteView: React.FC<VoteViewProps> = ({ state, localPlayerId, onSubm
               
               {playerId !== localPlayerId && (
                 <div style={{ marginTop: 10 }}>
-                  <Button variant="primary" onClick={() => {
-                    onSubmitVote(localPlayerId, playerId);
-                    setHasVoted(true);
-                  }}>Vote</Button>
+                  <Button variant="primary" onClick={() => handleVote(playerId)}>Vote</Button>
                 </div>
               )}
             </div>

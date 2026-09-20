@@ -8,7 +8,11 @@ import { GameStateProvider, useSharedGameState } from './hooks/useSharedGameStat
 import { useLocalPlayer } from './hooks/useLocalPlayer';
 import { startGame, advancePhase, submitPrompt } from './game/StateMachine';
 import { defaultSharedState } from './game/types';
-import { useTimer } from './hooks/useTimer';
+import { 
+  PLAYER_REGISTRATION_RETRY_INTERVAL_MS, 
+  LEAVE_ROOM_TIMEOUT_MS, 
+  VOTE_SCORE_INCREMENT 
+} from './game/constants';
 
 const GameContainer: React.FC = () => {
   const { state, setState } = useSharedGameState();
@@ -59,7 +63,7 @@ const GameContainer: React.FC = () => {
     };
 
     tryRegister();
-    const timer = setInterval(tryRegister, 500);
+    const timer = setInterval(tryRegister, PLAYER_REGISTRATION_RETRY_INTERVAL_MS);
     return () => clearInterval(timer);
   }, [isLoading, isLeaving, state.players, player.id, player.name, player.avatarColor, setState]);
 
@@ -78,22 +82,11 @@ const GameContainer: React.FC = () => {
     }
   };
 
-  const drawTimer = useTimer(
-    state.room?.phase === 'DRAW_PHASE' ? state.room.roundInfo.phaseStartedAt : null, 
-    state.room?.settings?.drawTimerSeconds || 90
-  );
-
-  const voteTimer = useTimer(
-    state.room?.phase === 'VOTE_PHASE' ? state.room.roundInfo.phaseStartedAt : null,
-    state.room?.settings?.voteTimerSeconds || 30
-  );
-
   // Phase Transition Orchestration:
-  // Instead of each client trying to eagerly transition the game out of DRAW_PHASE or VOTE_PHASE
-  // (which causes race conditions where an old state snapshot overwrites other people's drawings/votes),
-  // we elect the Host to observe the synchronized array of submitted drawings or votes. 
-  // Once the array contains everyone, OR the timer naturally expires, the Host safely 
-  // steps the StateMachine forward using the fully synchronized state.
+  // We elect the Host to observe the synchronized array of submitted drawings or votes. 
+  // Once all active players have submitted, the Host safely steps the StateMachine forward.
+  // We strictly wait for `allSubmitted` (client-driven auto-submissions) instead of forcing
+  // a timer transition to prevent clock-skew race conditions where the Host cuts off slower clients.
   useEffect(() => {
     if (!isHost) return;
 
@@ -102,20 +95,31 @@ const GameContainer: React.FC = () => {
       const submitted = state.round?.submittedPlayerIds?.length || 0;
       const allSubmitted = submitted >= expected && expected > 0;
       
-      if (allSubmitted || drawTimer.isExpired) {
-        setState(advancePhase(state));
+      if (allSubmitted) {
+        setState(draft => {
+          draft.room.phase = 'VOTE_PHASE';
+          draft.room.roundInfo.phaseStartedAt = Date.now();
+        });
       }
     }
     else if (state.room?.phase === 'VOTE_PHASE') {
-      const expected = Object.keys(state.players || {}).length; // Everyone votes
+      const expected = Object.keys(state.players || {}).length; 
       const submitted = Object.keys(state.round?.votes || {}).length;
       const allSubmitted = submitted >= expected && expected > 0;
       
-      if (allSubmitted || voteTimer.isExpired) {
-        setState(advancePhase(state));
+      if (allSubmitted) {
+        setState(draft => {
+          for (const [_voterId, votedForId] of Object.entries(draft.round.votes || {})) {
+            if (draft.players[votedForId]) {
+              draft.players[votedForId].score = (draft.players[votedForId].score || 0) + VOTE_SCORE_INCREMENT;
+            }
+          }
+          draft.room.phase = 'SCORE_PHASE';
+          draft.room.roundInfo.phaseStartedAt = Date.now();
+        });
       }
     }
-  }, [state, isHost, setState, drawTimer.isExpired, voteTimer.isExpired]);
+  }, [state, isHost, setState]);
 
   const handleLeaveRoom = () => {
     setIsLeaving(true);
@@ -126,7 +130,7 @@ const GameContainer: React.FC = () => {
     // Allow the mutation to flush over WebSocket before the page reload severs it
     setTimeout(() => {
       setRoomCodeInUrl('');
-    }, 500);
+    }, LEAVE_ROOM_TIMEOUT_MS);
   };
 
   const handlePlayAgain = () => {

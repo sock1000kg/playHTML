@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { SharedGameState } from '../../game/types';
 import { DrawingCanvas, DrawingCanvasRef } from '../canvas/DrawingCanvas';
 import { Button } from '../ui/Button';
@@ -15,12 +15,7 @@ export const DrawView: React.FC<DrawViewProps> = ({ state, localPlayerId, onSubm
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const { secondsRemaining, isExpired } = useTimer(state.room.roundInfo.phaseStartedAt, state.room.settings.drawTimerSeconds);
 
-  /**
-   * Auto-Submit Orchestration:
-   * When the timer expires, this effect automatically triggers the local canvas 
-   * to export its base64 drawing and submit it to the network.
-   * `hasSubmitted` ensures this only fires once per player, preventing infinite loops.
-   */
+  // Auto-submit when the timer expires
   useEffect(() => {
     if (isExpired && !hasSubmitted) {
       submitCurrentDrawing();
@@ -64,7 +59,10 @@ export const DrawView: React.FC<DrawViewProps> = ({ state, localPlayerId, onSubm
         <DrawingCanvas ref={canvasRef} />
       </div>
       
-      <Button variant="primary" onClick={submitCurrentDrawing}>Submit Drawing Early</Button>
+      <Button variant="primary" onClick={submitCurrentDrawing}>
+        Submit Drawing 
+        (If you don't submit, your drawing will be blank!)
+      </Button>
     </div>
   );
 };

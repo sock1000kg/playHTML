@@ -1,3 +1,5 @@
+import { DRAW_TIMER_SECONDS, VOTE_TIMER_SECONDS } from './constants';
+
 export type GamePhase =
   | 'LOBBY'
   | 'PROMPT_PHASE'
@@ -51,8 +53,8 @@ export const defaultSharedState: SharedGameState = {
     phase: 'LOBBY',
     settings: {
       maxBigRounds: 2,
-      drawTimerSeconds: 90,
-      voteTimerSeconds: 30
+      drawTimerSeconds: DRAW_TIMER_SECONDS,
+      voteTimerSeconds: VOTE_TIMER_SECONDS
     },
     roundInfo: {
       currentBigRound: 1,
