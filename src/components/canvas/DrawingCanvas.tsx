@@ -34,17 +34,50 @@ export const DrawingCanvas = React.forwardRef<DrawingCanvasRef, DrawingCanvasPro
     useEffect(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
-      // Fixed 800x600 resolution as per CLAUDE.md
-      canvas.width = 800;
-      canvas.height = 600;
 
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.fillStyle = '#2a2a2a';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-      }
+      const initContext = () => {
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.fillStyle = '#2a2a2a';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+        }
+      };
+
+      const isFirstResize = { current: true };
+      
+      const observer = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          const { width, height } = entry.contentRect;
+          
+          // Save existing content before resize so we don't lose the drawing
+          const ctx = canvas.getContext('2d');
+          let imageData;
+          
+          // Bug Fix: We must skip restoring on the very first resize. 
+          // A native <canvas> starts at 300x150. If we getImageData() from that initial
+          // 300x150 blank canvas and putImageData() after resizing, it paints a 300x150 
+          // dark/transparent block into the top-left corner of the new larger canvas!
+          if (!isFirstResize.current && canvas.width > 0 && canvas.height > 0 && ctx) {
+            imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          initContext();
+          
+          if (imageData && ctx) {
+            ctx.putImageData(imageData, 0, 0);
+          }
+          
+          isFirstResize.current = false;
+        }
+      });
+      
+      observer.observe(canvas);
+      return () => observer.disconnect();
     }, []);
 
     const getMousePos = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -109,6 +142,7 @@ export const DrawingCanvas = React.forwardRef<DrawingCanvasRef, DrawingCanvasPro
       <canvas
         ref={canvasRef}
         style={{
+          display: 'block',
           width: '100%',
           height: '100%',
           touchAction: 'none',

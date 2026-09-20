@@ -6,8 +6,9 @@ import { GameScreen } from './screens/GameScreen';
 import { EndScreen } from './screens/EndScreen';
 import { GameStateProvider, useSharedGameState } from './hooks/useSharedGameState';
 import { useLocalPlayer } from './hooks/useLocalPlayer';
-import { startGame, advancePhase, submitPrompt, submitDrawing, submitVote } from './game/StateMachine';
+import { startGame, advancePhase, submitPrompt, submitVote } from './game/StateMachine';
 import { defaultSharedState } from './game/types';
+import { useTimer } from './hooks/useTimer';
 
 const GameContainer: React.FC = () => {
   const { state, setState } = useSharedGameState();
@@ -55,11 +56,13 @@ const GameContainer: React.FC = () => {
     return () => clearInterval(timer);
   }, [isLoading, isLeaving, state.players, player.id, player.name, player.avatarColor, setState]);
 
+  const isHost = state.room?.hostId === player.id;
+
   const handleAdvance = () => {
     if (state.room?.phase === 'LOBBY') {
-      const isHost = !state.room.hostId || state.room.hostId === player.id;
+      const isHostLocal = !state.room.hostId || state.room.hostId === player.id;
       const nextState = startGame(state);
-      if (isHost) {
+      if (isHostLocal) {
         nextState.room.hostId = player.id;
       }
       setState(nextState);
@@ -67,6 +70,30 @@ const GameContainer: React.FC = () => {
       setState(advancePhase(state));
     }
   };
+
+  const drawTimer = useTimer(
+    state.room?.phase === 'DRAW_PHASE' ? state.room.roundInfo.phaseStartedAt : null, 
+    state.room?.settings?.drawTimerSeconds || 90
+  );
+
+  // Phase Transition Orchestration:
+  // Instead of each client trying to eagerly transition the game out of DRAW_PHASE 
+  // (which causes race conditions where an old state snapshot overwrites other people's drawings),
+  // we elect the Host to observe the synchronized array of submitted drawings. 
+  // Once the array contains everyone, OR the timer naturally expires, the Host safely 
+  // steps the StateMachine forward using the fully synchronized state.
+  useEffect(() => {
+    if (state.room?.phase === 'DRAW_PHASE' && isHost) {
+      const expected = Object.keys(state.players || {}).length; // Everyone draws
+      const submitted = state.round?.submittedPlayerIds?.length || 0;
+      
+      const allSubmitted = submitted >= expected && expected > 0;
+      
+      if (allSubmitted || drawTimer.isExpired) {
+        setState(advancePhase(state));
+      }
+    }
+  }, [state, isHost, setState, drawTimer.isExpired]);
 
   const handleLeaveRoom = () => {
     setIsLeaving(true);
@@ -105,7 +132,14 @@ const GameContainer: React.FC = () => {
       onAdvancePhase={handleAdvance}
       onLeaveRoom={handleLeaveRoom}
       onSubmitPrompt={(text) => setState(advancePhase(submitPrompt(state, text)))}
-      onSubmitDrawing={(id, dataUrl) => setState(submitDrawing(state, id, dataUrl))}
+      onSubmitDrawing={(id, dataUrl) => setState(draft => {
+        if (!draft.round.drawings) draft.round.drawings = {};
+        draft.round.drawings[id] = dataUrl;
+        if (!draft.round.submittedPlayerIds) draft.round.submittedPlayerIds = [];
+        if (!draft.round.submittedPlayerIds.includes(id)) {
+          draft.round.submittedPlayerIds.push(id);
+        }
+      })}
       onSubmitVote={(voter, voted) => setState(submitVote(state, voter, voted))}
     />
   );

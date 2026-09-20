@@ -373,14 +373,14 @@ Volumes persist in `localStorage` and are restored on load.
 
 ### Milestone 3 — Shared Submissions
 - [x] Connect `PromptView.tsx` to update shared state
-- [ ] Hook `DrawingCanvas.tsx` to auto-submit canvas base64 to shared state on timer end
-- [ ] Implement `useTimer.ts` derived from `phaseStartedAt` set by the Host
-- [ ] Ensure all clients sync into the `DRAW_PHASE` and submit together
+- [x] Hook `DrawingCanvas.tsx` to auto-submit canvas base64 to shared state on timer end
+- [x] Implement `useTimer.ts` derived from `phaseStartedAt` set by the Host
+- [x] Ensure all clients sync into the `DRAW_PHASE` and submit together
 
 ### Milestone 4 — Voting and Results
-- [ ] Connect `VoteView.tsx` to display everyone's drawings from shared state
-- [ ] Implement voting logic and sync votes to `SharedGameState.round.votes`
-- [ ] Build `ScoreView.tsx` to tally and reveal results across all clients
+- [x] Connect `VoteView.tsx` to display everyone's drawings from shared state
+- [ ] Allow clients to vote and submit to `sharedState.round.votes`
+- [ ] Ensure all clients sync into `SCORE_PHASE` when voting completes across all clients
 - [ ] Host-driven state machine auto-advances phase
 
 ### Milestone 5 — End Game and Loop

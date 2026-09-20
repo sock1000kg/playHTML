@@ -29,7 +29,7 @@ export const GameScreen: React.FC<GameScreenProps> = (props) => {
       content = <PromptView state={state} localPlayerId={props.localPlayerId} onSubmitPrompt={props.onSubmitPrompt} />;
       break;
     case 'DRAW_PHASE':
-      content = <DrawView state={state} localPlayerId={props.localPlayerId} onSubmitDrawing={props.onSubmitDrawing} onAdvance={props.onAdvancePhase} />;
+      content = <DrawView state={state} localPlayerId={props.localPlayerId} onSubmitDrawing={props.onSubmitDrawing} />;
       break;
     case 'VOTE_PHASE':
       content = <VoteView state={state} localPlayerId={props.localPlayerId} onSubmitVote={props.onSubmitVote} onAdvance={props.onAdvancePhase} />;
