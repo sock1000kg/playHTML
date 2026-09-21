@@ -66,6 +66,7 @@
 3. **Room routing via URL hash**. Room codes are stored in `window.location.hash` (`#ABCD`). `PlayProvider` uses `room={roomCode}` to isolate the PartyKit channel.
 4. **Canvas sync on submit**. Drawings are NOT streamed in real-time. On submission, each player exports their canvas as a Base64 PNG string and writes it to `roundData.drawings[playerId]`. This avoids flooding the sync channel.
 5. **Screen transitions** via `document.startViewTransition()` (View Transitions API) with a no-animation fallback.
+6. **Deployment**. The project is automatically deployed to GitHub Pages via a GitHub Action (`deploy.yml`) on every push to the `main` branch. The Vite base path is set to `/playHTML/`.
 
 ---
 
